@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The "Stands For" Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Patrick+Hand&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Patrick Hand', cursive;
+            background-color: #f0f9ff;
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        .title-font {
+            font-family: 'Fredoka One', cursive;
+        }
+        .wiggle:hover {
+            animation: wiggle 0.5s ease-in-out infinite;
+        }
+        @keyframes wiggle {
+            0%, 100% { transform: rotate(-3deg); }
+            50% { transform: rotate(3deg); }
+        }
+        .pop-in {
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            opacity: 0;
+            transform: scale(0.5);
+        }
+        @keyframes popIn {
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        .shimmer {
+            background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+        @keyframes shimmer {
+            0% { background-position: -150% 0; }
+            100% { background-position: 150% 0; }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center py-12 px-4 text-slate-800">
+
+    <!-- Header -->
+    <header class="text-center mb-10">
+        <h1 class="title-font text-5xl md:text-6xl text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 mb-2 drop-shadow-sm">
+            Stands For Generator
+        </h1>
+        <p class="text-xl text-slate-500">Uncover the <i>totally real</i> hidden meaning behind any word.</p>
+    </header>
+
+    <!-- Main Card -->
+    <div class="w-full max-w-lg bg-white rounded-3xl shadow-[8px_8px_0px_0px_rgba(0,0,0,0.1)] border-4 border-slate-800 p-6 md:p-8 relative overflow-hidden">
+        
+        <!-- Decorative blob -->
+        <div class="absolute -top-10 -right-10 w-32 h-32 bg-yellow-200 rounded-full opacity-50 pointer-events-none"></div>
+        <div class="absolute -bottom-10 -left-10 w-24 h-24 bg-pink-200 rounded-full opacity-50 pointer-events-none"></div>
+
+        <!-- Input Section -->
+        <div class="relative z-10 flex flex-col gap-4">
+            <label for="wordInput" class="sr-only">Enter a word</label>
+            <input 
+                type="text" 
+                id="wordInput" 
+                placeholder="Type a name or word..." 
+                class="w-full bg-slate-100 border-2 border-slate-300 rounded-xl px-4 py-4 text-2xl text-center focus:outline-none focus:border-indigo-500 focus:bg-white transition-all title-font text-indigo-600 placeholder-slate-400 uppercase"
+                maxlength="20"
+                autocomplete="off"
+            >
+
+            <!-- Vibe Selector -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div class="relative">
+                    <select id="vibeSelect" class="w-full appearance-none bg-white border-2 border-slate-300 rounded-xl px-4 py-3 text-lg focus:outline-none focus:border-pink-500 text-slate-700 font-bold cursor-pointer">
+                        <option value="classic">🎲 Classic Random</option>
+                        <option value="roast">✨ Brutal Roast (AI)</option>
+                        <option value="corporate">✨ Corporate Speak (AI)</option>
+                        <option value="scifi">✨ Sci-Fi Technobabble (AI)</option>
+                        <option value="fantasy">✨ Epic Fantasy (AI)</option>
+                        <option value="motivational">✨ Overly Motivational (AI)</option>
+                    </select>
+                    <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-slate-500">
+                        <svg class="w-5 h-5 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
+                    </div>
+                </div>
+                
+                <button 
+                    id="generateBtn"
+                    class="w-full bg-indigo-500 hover:bg-indigo-600 text-white text-xl py-3 rounded-xl border-b-4 border-indigo-700 active:border-b-0 active:translate-y-1 transition-all title-font wiggle flex items-center justify-center gap-2"
+                >
+                    <span>Reveal Truth!</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loadingState" class="mt-8 hidden flex-col items-center justify-center py-4">
+            <div class="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
+            <p class="text-indigo-500 animate-pulse font-bold">Consulting the Oracle...</p>
+        </div>
+
+        <!-- Result Section -->
+        <div id="resultContainer" class="mt-8 hidden">
+            <div class="border-t-2 border-dashed border-slate-300 my-6"></div>
+            <h2 class="text-center text-lg text-slate-400 mb-4">
+                Here is what it <strong>actually</strong> means:
+            </h2>
+            
+            <div id="acronymList" class="flex flex-wrap justify-center gap-3">
+                <!-- Generated items go here -->
+            </div>
+
+            <!-- AI Definition Box -->
+            <div id="aiDefinitionBox" class="hidden mt-6 bg-indigo-50 rounded-xl p-4 border-2 border-indigo-100 transform -rotate-1 shadow-sm">
+                <!-- The ID "aiLabel" is used to target the label for translation -->
+                <div id="aiLabel" class="text-sm font-bold text-indigo-500 mb-1">✨ AI Analysis</div>
+                <p id="aiDefinitionText" class="text-indigo-800 text-lg italic leading-snug">
+                    <!-- Definition goes here -->
+                </p>
+            </div>
+
+            <div class="mt-8 flex justify-center gap-2">
+                <button onclick="copyToClipboard()" class="text-sm bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg transition-colors font-bold">
+                    📋 Copy
+                </button>
+                <button onclick="handleGenerate()" class="text-sm bg-pink-100 hover:bg-pink-200 text-pink-700 px-4 py-2 rounded-lg transition-colors font-bold">
+                    🔄 Re-roll
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-12 text-slate-400 text-center">
+        <p>Warning: Results may be nonsensical, rude, or strangely accurate.</p>
+    </footer>
+
+    <!-- Notification -->
+    <div id="notification" class="fixed bottom-5 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full shadow-lg transform transition-all duration-300 translate-y-20 opacity-0 z-50">
+        Copied to clipboard!
+    </div>
+
+    <script>
+        const apiKey = ""; // API key will be injected by the environment
+
+        // The ridiculous dictionary
+        const dictionary = {
+            a: ["Always", "Accidentally", "Angry", "Awkwardly", "Amazing", "Absorbing", "Attacking", "Aggressive", "Ancient", "Alcoholic", "Anxious", "Adorable", "Alien"],
+            b: ["Being", "Big", "Boring", "Broken", "Beautiful", "Bouncing", "Barely", "Basic", "Bitter", "Blind", "Burnt", "Busy", "Bossy"],
+            c: ["Cat", "Chaos", "Crying", "Crunchy", "Cooking", "Creepy", "Confused", "Cold", "Chunky", "Cheesy", "Clumsy", "Crazy", "Calculated"],
+            d: ["Doing", "Drunk", "Dangerous", "Dark", "Desperate", "Dirty", "Dizzy", "Dramatic", "Dull", "Destroying", "Dancing", "Demonic", "Damp"],
+            e: ["Eating", "Elephants", "Every", "Evil", "Eager", "Early", "Educated", "Empty", "Electric", "Expensive", "Exploding", "Emotional", "Egg"],
+            f: ["Fighting", "Fat", "Fake", "Fancy", "Fast", "Fierce", "Filthy", "Flat", "Fluffy", "Foolish", "Fresh", "Furious", "Ferocious", "Frog"],
+            g: ["Giant", "Green", "Greasy", "Good", "Gross", "Guilty", "Grumpy", "Gentle", "Glorious", "Ghost", "Garbage", "Glittery", "Goblin"],
+            h: ["Hating", "Happy", "Huge", "Hungry", "Heavy", "Hollow", "Horrible", "Hot", "Hairy", "Helpless", "Hidden", "High", "Hamster"],
+            i: ["Igniting", "Icy", "Illegal", "Imaginary", "Impossible", "Innocent", "Itchy", "Intense", "Iron", "Irritating", "Invisible", "Insane", "Ice-cream"],
+            j: ["Jumping", "Jealous", "Juicy", "Jolly", "Jiggly", "Jagged", "Joking", "Joyful", "Jazz", "Jelly", "Just", "Judgmental", "Jerk"],
+            k: ["Killing", "Kicking", "Kind", "Kissing", "Knotted", "Known", "Kooky", "King", "Kangaroo", "Keen", "Keyboard", "Killer", "Kale"],
+            l: ["Licking", "Large", "Lazy", "Loud", "Lonely", "Lost", "Lovely", "Lucky", "Long", "Late", "Loose", "Lame", "Lemon"],
+            m: ["Making", "Mad", "Massive", "Mean", "Messy", "Mighty", "Miserable", "Modern", "Mushy", "Mysterious", "Moist", "Magical", "Monkey"],
+            n: ["Needing", "Nasty", "Naughty", "Nervous", "New", "Noisy", "Normal", "Nutty", "Naked", "Narrow", "Negative", "Nuclear", "Ninja"],
+            o: ["Only", "Old", "Odd", "Obnoxious", "Oily", "Open", "Orange", "Ordinary", "Organic", "Outrageous", "Owls", "Onions", "Overthinking"],
+            p: ["People", "Poor", "Perfect", "Pink", "Plain", "Plastic", "Pleasant", "Poisonous", "Polite", "Power", "Pizza", "Potato", "Panic"],
+            q: ["Quietly", "Quick", "Quaint", "Qualified", "Questionable", "Quirky", "Queen", "Quacking", "Quantum", "Quarrelsome", "Quivering"],
+            r: ["Running", "Rare", "Real", "Red", "Rich", "Right", "Rude", "Rotten", "Rough", "Round", "Rapid", "Racoon", "Regret"],
+            s: ["Secretly", "Sad", "Safe", "Salty", "Scary", "Sharp", "Shiny", "Short", "Silly", "Simple", "Slow", "Small", "Soft", "Sour", "Spicy", "Stupid", "Snake"],
+            t: ["Touching", "Tall", "Tame", "Tasty", "Tender", "Terrible", "Thick", "Thin", "Tiny", "Tired", "Tough", "Trash", "Toad", "Tacos"],
+            u: ["Using", "Ugly", "Unable", "Unfair", "Unhappy", "Unknown", "Unlucky", "Unusual", "Useless", "Underwear", "Unicorn", "Urgent", "Uncle"],
+            v: ["Very", "Vague", "Vain", "Vast", "Victorious", "Violent", "Vivacious", "Vampire", "Vegetable", "Vacuum", "Vodka", "Villain", "Velvet"],
+            w: ["Watching", "Waiting", "Warm", "Weak", "Wet", "White", "Wide", "Wild", "Wise", "Witty", "Wonderful", "Worried", "Wrong", "Waffle"],
+            x: ["X-raying", "Xenophobic", "Xylophone", "X-rated", "Xenial", "Xerox", "Xanthic"],
+            y: ["Yelling", "Yellow", "Young", "Yummy", "Yearning", "Yesterday", "Yogurt", "Yeti", "Yucky", "Youthful", "Yawning"],
+            z: ["Zooming", "Zealous", "Zesty", "Zombie", "Zero", "Zigzag", "Zany", "Zebra", "Zone", "Zoo"]
+        };
+
+        // Secondary dictionary for ending words (Nouns/Objects) to make the last word sound like a conclusion
+        const endWords = {
+            a: ["Ants", "Apples", "Aliens", "Accidents"],
+            b: ["Bears", "Bananas", "Babies", "Butts"],
+            c: ["Cats", "Cookies", "Clowns", "Cucumbers"],
+            d: ["Dogs", "Donuts", "Dragons", "Dads"],
+            e: ["Eggs", "Elves", "Ears", "Enemies"],
+            f: ["Frogs", "Fairies", "Feet", "Farts"],
+            g: ["Ghosts", "Grapes", "Giants", "Goats"],
+            h: ["Hats", "Horses", "Humans", "Hams"],
+            i: ["Igloos", "Insects", "Idiots", "Islands"],
+            j: ["Jellyfish", "Jokes", "Jackets", "Jars"],
+            k: ["Kings", "Kites", "Keys", "Knees"],
+            l: ["Lemons", "Lizards", "Lamps", "Losers"],
+            m: ["Monkeys", "Moms", "Moons", "Melons"],
+            n: ["Noses", "Ninjas", "Noodles", "Nerds"],
+            o: ["Onions", "Octopuses", "Owls", "Oranges"],
+            p: ["Pandas", "Pizzas", "Pigs", "Pants"],
+            q: ["Queens", "Quacks", "Quilts"],
+            r: ["Robots", "Rats", "Rocks", "Rabbits"],
+            s: ["Snakes", "Socks", "Stars", "Sandwiches"],
+            t: ["Tigers", "Toes", "Tacos", "Toilets"],
+            u: ["Unicorns", "Umbrellas", "Underwear"],
+            v: ["Vampires", "Violins", "Vans", "Vegetables"],
+            w: ["Whales", "Worms", "Witches", "Waffles"],
+            x: ["Xylophones", "X-rays"],
+            y: ["Yaks", "Yoyos", "Yoms"],
+            z: ["Zebras", "Zombies", "Zoos"]
+        };
+
+        const input = document.getElementById('wordInput');
+        const btn = document.getElementById('generateBtn');
+        const vibeSelect = document.getElementById('vibeSelect');
+        const resultContainer = document.getElementById('resultContainer');
+        const acronymList = document.getElementById('acronymList');
+        const loadingState = document.getElementById('loadingState');
+        const aiDefinitionBox = document.getElementById('aiDefinitionBox');
+        const aiDefinitionText = document.getElementById('aiDefinitionText');
+        const aiLabel = document.getElementById('aiLabel');
+
+        function getRandomWord(letter, isLast) {
+            letter = letter.toLowerCase();
+            if (!dictionary[letter]) return "???"; // Handle non-letters
+            
+            let source = dictionary[letter];
+            
+            // 30% chance to use a "noun" list for the last word for better comedic timing
+            if (isLast && endWords[letter] && Math.random() > 0.7) {
+                source = endWords[letter];
+            }
+
+            return source[Math.floor(Math.random() * source.length)];
+        }
+
+        async function handleGenerate() {
+            const text = input.value.trim();
+            if (!text) {
+                input.focus();
+                return;
+            }
+
+            const mode = vibeSelect.value;
+
+            if (mode === 'classic') {
+                generateClassicAcronym(text);
+            } else {
+                await generateAIAcronym(text, mode);
+            }
+        }
+
+        function renderAcronym(letters, words, thaiWords = []) {
+            // Clear previous results
+            acronymList.innerHTML = '';
+            resultContainer.classList.remove('hidden');
+            loadingState.classList.add('hidden');
+
+            letters.forEach((char, index) => {
+                if (char.match(/[a-z]/i)) {
+                    const word = words[index] || "???";
+                    const thaiWord = thaiWords && thaiWords[index] ? thaiWords[index] : null;
+                    
+                    // Create item container
+                    const item = document.createElement('div');
+                    item.className = "flex flex-col items-center p-2 rounded-lg hover:bg-slate-50 transition-colors pop-in min-w-[90px]";
+                    item.style.animationDelay = `${index * 100}ms`;
+                    
+                    // Letter Box
+                    const letterBox = document.createElement('div');
+                    letterBox.className = "w-10 h-10 flex items-center justify-center bg-slate-800 text-white rounded-lg title-font text-xl shadow-[3px_3px_0px_0px_rgba(160,174,192,1)] uppercase shrink-0 mb-2";
+                    letterBox.textContent = char;
+                    
+                    // Word Container
+                    const wordContainer = document.createElement('div');
+                    wordContainer.className = "flex flex-col items-center text-center";
+                    
+                    // English Word
+                    const wordText = document.createElement('div');
+                    wordText.className = "text-lg text-indigo-600 title-font leading-tight";
+                    wordText.textContent = word;
+                    
+                    wordContainer.appendChild(wordText);
+
+                    // Thai Translation (if available)
+                    if (thaiWord) {
+                        const thaiText = document.createElement('div');
+                        thaiText.className = "text-sm text-slate-400 font-normal mt-1";
+                        thaiText.textContent = thaiWord;
+                        wordContainer.appendChild(thaiText);
+                    }
+
+                    item.appendChild(letterBox);
+                    item.appendChild(wordContainer);
+                    acronymList.appendChild(item);
+                } else if (char.trim() !== "") {
+                    // Handle spaces/symbols
+                    const spacer = document.createElement('div');
+                    spacer.className = "w-4"; 
+                    acronymList.appendChild(spacer);
+                }
+            });
+
+             // Scroll to result on mobile
+             if(window.innerWidth < 768) {
+                setTimeout(() => {
+                    resultContainer.scrollIntoView({ behavior: 'smooth' });
+                }, 100);
+            }
+        }
+
+        function generateClassicAcronym(text) {
+            aiDefinitionBox.classList.add('hidden');
+            const chars = text.split('');
+            const words = [];
+            
+            // Pre-calculate words to match index of letters
+            let letterIndex = 0;
+            chars.forEach((char) => {
+                if (char.match(/[a-z]/i)) {
+                    const validLetters = text.replace(/[^a-zA-Z]/g, '');
+                    const isLast = letterIndex === validLetters.length - 1;
+                    words.push(getRandomWord(char, isLast));
+                    letterIndex++;
+                } else {
+                    words.push(null); // Placeholder for symbols
+                }
+            });
+
+            renderAcronym(chars, words, []); // No Thai words for classic mode
+        }
+
+        async function generateAIAcronym(text, vibe) {
+            // UI Updates
+            resultContainer.classList.add('hidden');
+            loadingState.classList.remove('hidden');
+            loadingState.classList.add('flex');
+            btn.disabled = true;
+            
+            try {
+                const vibeMap = {
+                    'roast': 'Savage Roast, insult the user, be rude but funny',
+                    'corporate': 'Corporate Jargon, Synergistic, Meaningless Business Speak',
+                    'scifi': 'Technobabble, Futuristic, Star Trek style',
+                    'fantasy': 'Medieval Fantasy, RPG style, Epic',
+                    'motivational': 'Overly Motivational, Toxic Positivity, Inspiring'
+                };
+                
+                const styleDescription = vibeMap[vibe] || 'Funny';
+                
+                const systemPrompt = `You are a creative acronym generator.
+                Task: Create a backronym for the word "${text}".
+                Style/Vibe: ${styleDescription}.
+                
+                Rules:
+                1. Break the word "${text}" down letter by letter.
+                2. For each letter, assign a word starting with that letter.
+                3. The words must form a coherent (but funny/absurd) phrase matching the vibe.
+                4. Provide a witty "dictionary definition" or "deep thought" about this new phrase.
+                5. Provide a Thai translation of that definition (SHORT, DIRECT translation only, no explanation).
+                6. Provide Thai translations for each of the generated words.
+                
+                Return ONLY valid JSON in this format:
+                {
+                    "words": ["WordForFirstLetter", "WordForSecondLetter", ...],
+                    "words_thai": ["ThaiWord1", "ThaiWord2", ...],
+                    "definition": "A short, witty explanation of this new concept.",
+                    "definition_thai": "Direct, short Thai translation of the definition (max 1 sentence)."
+                }
+                `;
+
+                // API Call
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{ text: systemPrompt }]
+                        }],
+                        generationConfig: {
+                            responseMimeType: "application/json"
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('API Error');
+                }
+
+                const data = await response.json();
+                const aiResult = JSON.parse(data.candidates[0].content.parts[0].text);
+
+                // Process Results
+                const chars = text.split('');
+                const displayWords = [];
+                const displayThaiWords = [];
+                let aiWordIndex = 0;
+
+                chars.forEach(char => {
+                    if (char.match(/[a-z]/i)) {
+                        displayWords.push(aiResult.words[aiWordIndex] || "Mystery");
+                        displayThaiWords.push(aiResult.words_thai ? aiResult.words_thai[aiWordIndex] : "");
+                        aiWordIndex++;
+                    } else {
+                        displayWords.push(null);
+                        displayThaiWords.push(null);
+                    }
+                });
+
+                // Render
+                renderAcronym(chars, displayWords, displayThaiWords);
+                
+                // Show Definition & Translation
+                if (aiResult.definition) {
+                    aiDefinitionText.textContent = aiResult.definition;
+                    
+                    if (aiResult.definition_thai) {
+                        aiLabel.textContent = '✨ ' + aiResult.definition_thai;
+                        aiLabel.classList.remove('uppercase', 'tracking-wider', 'text-xs');
+                        aiLabel.classList.add('text-sm', 'font-bold');
+                    } else {
+                        aiLabel.textContent = '✨ AI Analysis';
+                        aiLabel.classList.add('uppercase', 'tracking-wider', 'text-xs');
+                        aiLabel.classList.remove('text-sm');
+                    }
+                    
+                    aiDefinitionBox.classList.remove('hidden');
+                }
+
+            } catch (error) {
+                console.error("AI Generation failed:", error);
+                alert("The AI is taking a nap. Falling back to classic mode!");
+                generateClassicAcronym(text);
+            } finally {
+                loadingState.classList.add('hidden');
+                loadingState.classList.remove('flex');
+                btn.disabled = false;
+            }
+        }
+
+        // Event Listeners
+        btn.addEventListener('click', handleGenerate);
+        
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleGenerate();
+        });
+
+        function copyToClipboard() {
+            const items = acronymList.querySelectorAll('.flex-col'); 
+            let textToCopy = `The Truth about ${input.value.toUpperCase()}:\n\n`;
+            
+            // Logic to skip the inner text container wrapper when grabbing text
+            const wordItems = Array.from(items).filter(item => item.querySelector('.text-indigo-600'));
+
+            wordItems.forEach(item => {
+                // Structure: LetterBox, WordContainer(English, Thai)
+                const letter = item.children[0].textContent;
+                const wordContainer = item.children[1];
+                const engWord = wordContainer.children[0].textContent;
+                // Optional Thai word
+                const thaiWord = wordContainer.children[1] ? ` (${wordContainer.children[1].textContent})` : '';
+                
+                textToCopy += `${letter} - ${engWord}${thaiWord}\n`;
+            });
+
+            if (!aiDefinitionBox.classList.contains('hidden')) {
+                textToCopy += `\nAnalysis: ${aiDefinitionText.textContent}`;
+                if (aiLabel.textContent.includes('✨')) {
+                    textToCopy += `\n(${aiLabel.textContent.replace('✨ ', '')})`;
+                }
+            }
+
+            const textarea = document.createElement('textarea');
+            textarea.value = textToCopy;
+            document.body.appendChild(textarea);
+            textarea.select();
+            
+            try {
+                document.execCommand('copy');
+                showNotification();
+            } catch (err) {
+                console.error('Failed to copy text', err);
+            }
+            
+            document.body.removeChild(textarea);
+        }
+
+        function showNotification() {
+            const notif = document.getElementById('notification');
+            notif.classList.remove('translate-y-20', 'opacity-0');
+            
+            setTimeout(() => {
+                notif.classList.add('translate-y-20', 'opacity-0');
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
