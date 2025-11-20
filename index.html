@@ -6,6 +6,11 @@
     <title>The "Stands For" Generator</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Patrick+Hand&display=swap" rel="stylesheet">
+    
+    <!-- KaTeX for Math Rendering (Fixed Imports) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    
     <style>
         body {
             font-family: 'Patrick Hand', cursive;
@@ -43,6 +48,8 @@
             0% { background-position: -150% 0; }
             100% { background-position: 150% 0; }
         }
+        /* Math Box Specifics */
+        .katex-display { margin: 0; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center py-12 px-4 text-slate-800">
@@ -78,12 +85,10 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <div class="relative">
                     <select id="vibeSelect" class="w-full appearance-none bg-white border-2 border-slate-300 rounded-xl px-4 py-3 text-lg focus:outline-none focus:border-pink-500 text-slate-700 font-bold cursor-pointer">
-                        <option value="classic">🎲 Classic Random</option>
-                        <option value="roast">✨ Brutal Roast (AI)</option>
-                        <option value="corporate">✨ Corporate Speak (AI)</option>
-                        <option value="scifi">✨ Sci-Fi Technobabble (AI)</option>
-                        <option value="fantasy">✨ Epic Fantasy (AI)</option>
-                        <option value="motivational">✨ Overly Motivational (AI)</option>
+                        <option value="roast">✨ Brutal Roast</option>
+                        <option value="corporate">✨ Corporate Speak</option>
+                        <option value="scifi">✨ Sci-Fi Technobabble</option>
+                        <option value="motivational">✨ Overly Motivational</option>
                     </select>
                     <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-slate-500">
                         <svg class="w-5 h-5 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
@@ -125,6 +130,12 @@
                 </p>
             </div>
 
+            <!-- Math Formula Box (Sci-Fi Only) -->
+            <div id="mathBox" class="hidden mt-4 bg-slate-900 rounded-xl p-4 border-2 border-indigo-500 shadow-lg text-center overflow-x-auto">
+                <div class="text-xs text-indigo-300 font-mono mb-2 uppercase tracking-widest">Calculated Probability</div>
+                <div id="mathContent" class="text-white text-lg py-2"></div>
+            </div>
+
             <div class="mt-8 flex justify-center gap-2">
                 <button onclick="copyToClipboard()" class="text-sm bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg transition-colors font-bold">
                     📋 Copy
@@ -135,12 +146,7 @@
             </div>
         </div>
     </div>
-
-    <!-- Footer -->
-    <footer class="mt-12 text-slate-400 text-center">
-        <p>Warning: Results may be nonsensical, rude, or strangely accurate.</p>
-    </footer>
-
+    
     <!-- Notification -->
     <div id="notification" class="fixed bottom-5 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full shadow-lg transform transition-all duration-300 translate-y-20 opacity-0 z-50">
         Copied to clipboard!
@@ -148,66 +154,6 @@
 
     <script>
         const apiKey = ""; // API key will be injected by the environment
-
-        // The ridiculous dictionary
-        const dictionary = {
-            a: ["Always", "Accidentally", "Angry", "Awkwardly", "Amazing", "Absorbing", "Attacking", "Aggressive", "Ancient", "Alcoholic", "Anxious", "Adorable", "Alien"],
-            b: ["Being", "Big", "Boring", "Broken", "Beautiful", "Bouncing", "Barely", "Basic", "Bitter", "Blind", "Burnt", "Busy", "Bossy"],
-            c: ["Cat", "Chaos", "Crying", "Crunchy", "Cooking", "Creepy", "Confused", "Cold", "Chunky", "Cheesy", "Clumsy", "Crazy", "Calculated"],
-            d: ["Doing", "Drunk", "Dangerous", "Dark", "Desperate", "Dirty", "Dizzy", "Dramatic", "Dull", "Destroying", "Dancing", "Demonic", "Damp"],
-            e: ["Eating", "Elephants", "Every", "Evil", "Eager", "Early", "Educated", "Empty", "Electric", "Expensive", "Exploding", "Emotional", "Egg"],
-            f: ["Fighting", "Fat", "Fake", "Fancy", "Fast", "Fierce", "Filthy", "Flat", "Fluffy", "Foolish", "Fresh", "Furious", "Ferocious", "Frog"],
-            g: ["Giant", "Green", "Greasy", "Good", "Gross", "Guilty", "Grumpy", "Gentle", "Glorious", "Ghost", "Garbage", "Glittery", "Goblin"],
-            h: ["Hating", "Happy", "Huge", "Hungry", "Heavy", "Hollow", "Horrible", "Hot", "Hairy", "Helpless", "Hidden", "High", "Hamster"],
-            i: ["Igniting", "Icy", "Illegal", "Imaginary", "Impossible", "Innocent", "Itchy", "Intense", "Iron", "Irritating", "Invisible", "Insane", "Ice-cream"],
-            j: ["Jumping", "Jealous", "Juicy", "Jolly", "Jiggly", "Jagged", "Joking", "Joyful", "Jazz", "Jelly", "Just", "Judgmental", "Jerk"],
-            k: ["Killing", "Kicking", "Kind", "Kissing", "Knotted", "Known", "Kooky", "King", "Kangaroo", "Keen", "Keyboard", "Killer", "Kale"],
-            l: ["Licking", "Large", "Lazy", "Loud", "Lonely", "Lost", "Lovely", "Lucky", "Long", "Late", "Loose", "Lame", "Lemon"],
-            m: ["Making", "Mad", "Massive", "Mean", "Messy", "Mighty", "Miserable", "Modern", "Mushy", "Mysterious", "Moist", "Magical", "Monkey"],
-            n: ["Needing", "Nasty", "Naughty", "Nervous", "New", "Noisy", "Normal", "Nutty", "Naked", "Narrow", "Negative", "Nuclear", "Ninja"],
-            o: ["Only", "Old", "Odd", "Obnoxious", "Oily", "Open", "Orange", "Ordinary", "Organic", "Outrageous", "Owls", "Onions", "Overthinking"],
-            p: ["People", "Poor", "Perfect", "Pink", "Plain", "Plastic", "Pleasant", "Poisonous", "Polite", "Power", "Pizza", "Potato", "Panic"],
-            q: ["Quietly", "Quick", "Quaint", "Qualified", "Questionable", "Quirky", "Queen", "Quacking", "Quantum", "Quarrelsome", "Quivering"],
-            r: ["Running", "Rare", "Real", "Red", "Rich", "Right", "Rude", "Rotten", "Rough", "Round", "Rapid", "Racoon", "Regret"],
-            s: ["Secretly", "Sad", "Safe", "Salty", "Scary", "Sharp", "Shiny", "Short", "Silly", "Simple", "Slow", "Small", "Soft", "Sour", "Spicy", "Stupid", "Snake"],
-            t: ["Touching", "Tall", "Tame", "Tasty", "Tender", "Terrible", "Thick", "Thin", "Tiny", "Tired", "Tough", "Trash", "Toad", "Tacos"],
-            u: ["Using", "Ugly", "Unable", "Unfair", "Unhappy", "Unknown", "Unlucky", "Unusual", "Useless", "Underwear", "Unicorn", "Urgent", "Uncle"],
-            v: ["Very", "Vague", "Vain", "Vast", "Victorious", "Violent", "Vivacious", "Vampire", "Vegetable", "Vacuum", "Vodka", "Villain", "Velvet"],
-            w: ["Watching", "Waiting", "Warm", "Weak", "Wet", "White", "Wide", "Wild", "Wise", "Witty", "Wonderful", "Worried", "Wrong", "Waffle"],
-            x: ["X-raying", "Xenophobic", "Xylophone", "X-rated", "Xenial", "Xerox", "Xanthic"],
-            y: ["Yelling", "Yellow", "Young", "Yummy", "Yearning", "Yesterday", "Yogurt", "Yeti", "Yucky", "Youthful", "Yawning"],
-            z: ["Zooming", "Zealous", "Zesty", "Zombie", "Zero", "Zigzag", "Zany", "Zebra", "Zone", "Zoo"]
-        };
-
-        // Secondary dictionary for ending words (Nouns/Objects) to make the last word sound like a conclusion
-        const endWords = {
-            a: ["Ants", "Apples", "Aliens", "Accidents"],
-            b: ["Bears", "Bananas", "Babies", "Butts"],
-            c: ["Cats", "Cookies", "Clowns", "Cucumbers"],
-            d: ["Dogs", "Donuts", "Dragons", "Dads"],
-            e: ["Eggs", "Elves", "Ears", "Enemies"],
-            f: ["Frogs", "Fairies", "Feet", "Farts"],
-            g: ["Ghosts", "Grapes", "Giants", "Goats"],
-            h: ["Hats", "Horses", "Humans", "Hams"],
-            i: ["Igloos", "Insects", "Idiots", "Islands"],
-            j: ["Jellyfish", "Jokes", "Jackets", "Jars"],
-            k: ["Kings", "Kites", "Keys", "Knees"],
-            l: ["Lemons", "Lizards", "Lamps", "Losers"],
-            m: ["Monkeys", "Moms", "Moons", "Melons"],
-            n: ["Noses", "Ninjas", "Noodles", "Nerds"],
-            o: ["Onions", "Octopuses", "Owls", "Oranges"],
-            p: ["Pandas", "Pizzas", "Pigs", "Pants"],
-            q: ["Queens", "Quacks", "Quilts"],
-            r: ["Robots", "Rats", "Rocks", "Rabbits"],
-            s: ["Snakes", "Socks", "Stars", "Sandwiches"],
-            t: ["Tigers", "Toes", "Tacos", "Toilets"],
-            u: ["Unicorns", "Umbrellas", "Underwear"],
-            v: ["Vampires", "Violins", "Vans", "Vegetables"],
-            w: ["Whales", "Worms", "Witches", "Waffles"],
-            x: ["Xylophones", "X-rays"],
-            y: ["Yaks", "Yoyos", "Yoms"],
-            z: ["Zebras", "Zombies", "Zoos"]
-        };
 
         const input = document.getElementById('wordInput');
         const btn = document.getElementById('generateBtn');
@@ -218,20 +164,8 @@
         const aiDefinitionBox = document.getElementById('aiDefinitionBox');
         const aiDefinitionText = document.getElementById('aiDefinitionText');
         const aiLabel = document.getElementById('aiLabel');
-
-        function getRandomWord(letter, isLast) {
-            letter = letter.toLowerCase();
-            if (!dictionary[letter]) return "???"; // Handle non-letters
-            
-            let source = dictionary[letter];
-            
-            // 30% chance to use a "noun" list for the last word for better comedic timing
-            if (isLast && endWords[letter] && Math.random() > 0.7) {
-                source = endWords[letter];
-            }
-
-            return source[Math.floor(Math.random() * source.length)];
-        }
+        const mathBox = document.getElementById('mathBox');
+        const mathContent = document.getElementById('mathContent');
 
         async function handleGenerate() {
             const text = input.value.trim();
@@ -239,14 +173,8 @@
                 input.focus();
                 return;
             }
-
             const mode = vibeSelect.value;
-
-            if (mode === 'classic') {
-                generateClassicAcronym(text);
-            } else {
-                await generateAIAcronym(text, mode);
-            }
+            await generateAIAcronym(text, mode);
         }
 
         function renderAcronym(letters, words, thaiWords = []) {
@@ -308,44 +236,27 @@
             }
         }
 
-        function generateClassicAcronym(text) {
-            aiDefinitionBox.classList.add('hidden');
-            const chars = text.split('');
-            const words = [];
-            
-            // Pre-calculate words to match index of letters
-            let letterIndex = 0;
-            chars.forEach((char) => {
-                if (char.match(/[a-z]/i)) {
-                    const validLetters = text.replace(/[^a-zA-Z]/g, '');
-                    const isLast = letterIndex === validLetters.length - 1;
-                    words.push(getRandomWord(char, isLast));
-                    letterIndex++;
-                } else {
-                    words.push(null); // Placeholder for symbols
-                }
-            });
-
-            renderAcronym(chars, words, []); // No Thai words for classic mode
-        }
-
         async function generateAIAcronym(text, vibe) {
             // UI Updates
             resultContainer.classList.add('hidden');
             loadingState.classList.remove('hidden');
             loadingState.classList.add('flex');
+            mathBox.classList.add('hidden'); // Hide math box by default
             btn.disabled = true;
             
             try {
                 const vibeMap = {
                     'roast': 'Savage Roast, insult the user, be rude but funny',
                     'corporate': 'Corporate Jargon, Synergistic, Meaningless Business Speak',
-                    'scifi': 'Technobabble, Futuristic, Star Trek style',
-                    'fantasy': 'Medieval Fantasy, RPG style, Epic',
+                    'scifi': 'Technobabble, Futuristic, Star Trek style. Use complex scientific sounding terms.',
                     'motivational': 'Overly Motivational, Toxic Positivity, Inspiring'
                 };
                 
                 const styleDescription = vibeMap[vibe] || 'Funny';
+                let latexInstruction = "";
+                if (vibe === 'scifi') {
+                    latexInstruction = `7. Since the style is Sci-Fi, generate a "latex_formula" that looks like a complex mathematical proof of this word. It should be readable (using valid LaTeX) but scientifically nonsensical and cool. Use integrals, sums, greek letters, etc. Return ONLY the raw latex string without markdown delimiters.`;
+                }
                 
                 const systemPrompt = `You are a creative acronym generator.
                 Task: Create a backronym for the word "${text}".
@@ -358,13 +269,15 @@
                 4. Provide a witty "dictionary definition" or "deep thought" about this new phrase.
                 5. Provide a Thai translation of that definition (SHORT, DIRECT translation only, no explanation).
                 6. Provide Thai translations for each of the generated words.
+                ${latexInstruction}
                 
                 Return ONLY valid JSON in this format:
                 {
                     "words": ["WordForFirstLetter", "WordForSecondLetter", ...],
                     "words_thai": ["ThaiWord1", "ThaiWord2", ...],
                     "definition": "A short, witty explanation of this new concept.",
-                    "definition_thai": "Direct, short Thai translation of the definition (max 1 sentence)."
+                    "definition_thai": "Direct, short Thai translation of the definition (max 1 sentence).",
+                    "latex_formula": "Optional latex string (only if requested)"
                 }
                 `;
 
@@ -428,10 +341,35 @@
                     aiDefinitionBox.classList.remove('hidden');
                 }
 
+                // Render Math for Sci-Fi
+                if (vibe === 'scifi' && aiResult.latex_formula) {
+                    mathBox.classList.remove('hidden');
+                    try {
+                        // Clean up potential markdown delimiters from AI
+                        let cleanFormula = aiResult.latex_formula
+                            .replace(/^```latex\s*/, '')
+                            .replace(/^```\s*/, '')
+                            .replace(/```$/, '');
+                            
+                        if (window.katex) {
+                            katex.render(cleanFormula, mathContent, {
+                                throwOnError: false,
+                                displayMode: true,
+                                output: 'html' // Render as HTML elements
+                            });
+                        } else {
+                            mathContent.textContent = cleanFormula;
+                            console.error("KaTeX library not found");
+                        }
+                    } catch (e) {
+                        console.error("KaTeX error", e);
+                        mathBox.classList.add('hidden');
+                    }
+                }
+
             } catch (error) {
                 console.error("AI Generation failed:", error);
-                alert("The AI is taking a nap. Falling back to classic mode!");
-                generateClassicAcronym(text);
+                alert("The AI encountered an anomaly. Try again!");
             } finally {
                 loadingState.classList.add('hidden');
                 loadingState.classList.remove('flex');
@@ -450,17 +388,13 @@
             const items = acronymList.querySelectorAll('.flex-col'); 
             let textToCopy = `The Truth about ${input.value.toUpperCase()}:\n\n`;
             
-            // Logic to skip the inner text container wrapper when grabbing text
             const wordItems = Array.from(items).filter(item => item.querySelector('.text-indigo-600'));
 
             wordItems.forEach(item => {
-                // Structure: LetterBox, WordContainer(English, Thai)
                 const letter = item.children[0].textContent;
                 const wordContainer = item.children[1];
                 const engWord = wordContainer.children[0].textContent;
-                // Optional Thai word
                 const thaiWord = wordContainer.children[1] ? ` (${wordContainer.children[1].textContent})` : '';
-                
                 textToCopy += `${letter} - ${engWord}${thaiWord}\n`;
             });
 
@@ -469,6 +403,10 @@
                 if (aiLabel.textContent.includes('✨')) {
                     textToCopy += `\n(${aiLabel.textContent.replace('✨ ', '')})`;
                 }
+            }
+            
+            if (!mathBox.classList.contains('hidden')) {
+                 textToCopy += `\nEquation: [View App for Formula]`;
             }
 
             const textarea = document.createElement('textarea');
